@@ -1,0 +1,78 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Lista de Usuários Cadastrados</h2>
+    
+    <div class="table-responsive mt-4">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Data de Cadastro</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>{{ usuario.nome }}</td>
+                    <td>
+                        <a href="mailto:{{ usuario.email }}" class="text-decoration-none">
+                            {{ usuario.email }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="tel:{{ usuario.telefone }}" class="text-decoration-none">
+                            {{ usuario.telefone }}
+                        </a>
+                    </td>
+                    <td>{{ usuario.data_cadastro.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('atualizar', id=usuario.id) }}" 
+                               class="btn btn-sm btn-primary" title="Editar">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" class="btn btn-sm btn-danger" title="Excluir"
+                                    onclick="confirmarExclusao({{ usuario.id }})">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="confirmacaoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                Tem certeza que deseja excluir este usuário?
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btnConfirmarExclusao" class="btn btn-danger">Excluir</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarExclusao(id) {
+    var modal = new bootstrap.Modal(document.getElementById('confirmacaoModal'));
+    document.getElementById('btnConfirmarExclusao').href = '/excluir/' + id;
+    modal.show();
+}
+</script>
+{% endblock %}

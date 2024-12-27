@@ -1,0 +1,153 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Lista de Contribuições</h2>
+        <div>
+            <a href="{{ url_for('inserir_contribuicao') }}" class="btn btn-success">
+                <i class="bi bi-cash-coin me-1"></i>Inserir Contribuinte
+            </a>
+        </div>
+    </div>
+
+    <!-- Cards de Totais -->
+    <div class="row mb-4">
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card bg-primary text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total Arrecadado (Mês)</h6>
+                    <h3 class="card-text">R$ {{ "%.2f"|format(total_arrecadado_mes) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card bg-success text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total Esperado (Mês)</h6>
+                    <h3 class="card-text">R$ {{ "%.2f"|format(total_esperado_mes) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card bg-info text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total Arrecadado (Ano)</h6>
+                    <h3 class="card-text">R$ {{ "%.2f"|format(total_arrecadado_ano) }}</h3>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-6 col-lg-3 mb-3">
+            <div class="card bg-warning text-white h-100">
+                <div class="card-body">
+                    <h6 class="card-title">Total Esperado (Ano)</h6>
+                    <h3 class="card-text">R$ {{ "%.2f"|format(total_esperado_ano) }}</h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Contribuintes -->
+    <div class="table-responsive">
+        <table class="table table-hover">
+            <thead class="table-light">
+                <tr>
+                    <th>Nome</th>
+                    <th>Valor</th>
+                    <th>Data</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for contribuinte in contribuintes %}
+                {% set contribuicao = contribuinte.contribuicoes|selectattr('mes_referencia', 'equalto', mes_atual)|first %}
+                {% if contribuicao %}
+                <tr>
+                    <td>{{ contribuinte.nome }}</td>
+                    <td>R$ {{ "%.2f"|format(contribuicao.valor) }}</td>
+                    <td>{{ contribuicao.data_pagamento.strftime('%d/%m/%Y') if contribuicao.status == 'Pago' else '-' }}</td>
+                    <td>
+                        {% if contribuicao.status == 'Pago' %}
+                            <span class="badge bg-success">Pago</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Pendente</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            {% if contribuicao.status == 'Pendente' %}
+                            <button type="button" class="btn btn-sm btn-success" title="Confirmar Pagamento"
+                                    onclick="confirmarPagamento({{ contribuicao.id }}, '{{ contribuinte.nome }}', {{ contribuicao.valor }})">
+                                <i class="bi bi-check-circle"></i>
+                            </button>
+                            {% endif %}
+                            <button type="button" class="btn btn-sm btn-danger" title="Excluir"
+                                    onclick="confirmarExclusao({{ contribuicao.id }}, '{{ contribuinte.nome }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endif %}
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Pagamento -->
+<div class="modal fade" id="confirmacaoPagamentoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Pagamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Confirmar o pagamento de <strong id="nomeContribuinte"></strong>?</p>
+                <p>Valor: R$ <span id="valorContribuicao"></span></p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btnConfirmarPagamento" class="btn btn-success">Confirmar Pagamento</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação de Exclusão -->
+<div class="modal fade" id="confirmacaoExclusaoModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <p>Tem certeza que deseja excluir o registro de <strong id="nomeExclusao"></strong>?</p>
+                <p class="text-danger">Esta ação não pode ser desfeita!</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <a href="#" id="btnConfirmarExclusao" class="btn btn-danger">Excluir</a>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function confirmarPagamento(id, nome, valor) {
+    document.getElementById('nomeContribuinte').textContent = nome;
+    document.getElementById('valorContribuicao').textContent = valor.toFixed(2);
+    document.getElementById('btnConfirmarPagamento').href = '/registrar_pagamento/' + id;
+    new bootstrap.Modal(document.getElementById('confirmacaoPagamentoModal')).show();
+}
+
+function confirmarExclusao(id, nome) {
+    document.getElementById('nomeExclusao').textContent = nome;
+    document.getElementById('btnConfirmarExclusao').href = '/excluir_contribuicao/' + id;
+    new bootstrap.Modal(document.getElementById('confirmacaoExclusaoModal')).show();
+}
+</script>
+{% endblock %}
