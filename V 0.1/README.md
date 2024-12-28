@@ -1,4 +1,4 @@
-# 🎲 Painel Webloto - Sistema de Gestão de Contribuições
+# 🎲 Painel Webloto V 0.1 - Sistema de Gestão de Contribuições
 
 ## 📋 Sobre o Projeto
 
