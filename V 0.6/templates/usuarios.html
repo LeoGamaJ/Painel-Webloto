@@ -1,0 +1,291 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Gerenciamento de Usuários</h2>
+        <button type="button" class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#adicionarModal"
+                data-bs-toggle="tooltip" data-bs-placement="left" title="Adicionar novo usuário ao sistema">
+            <i class="bi bi-person-plus me-2"></i>Adicionar Usuário
+        </button>
+    </div>
+    
+    {% with messages = get_flashed_messages(with_categories=true) %}
+        {% if messages %}
+            {% for category, message in messages %}
+                <div class="alert alert-{{ category }} alert-dismissible fade show d-none" role="alert">
+                    {{ message }}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+                </div>
+            {% endfor %}
+        {% endif %}
+    {% endwith %}
+    
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Nome</th>
+                    <th>E-mail</th>
+                    <th>Telefone</th>
+                    <th>Data de Cadastro</th>
+                    <th>Valor Mensal Comprometido</th>
+                    <th>Status</th>
+                    <th>Ações</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for usuario in usuarios %}
+                <tr>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="avatar-circle me-3">
+                                {{ usuario.nome[:2].upper() }}
+                            </div>
+                            <div>
+                                <h6 class="mb-0">{{ usuario.nome }}</h6>
+                                <small class="text-muted">{{ usuario.email }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <a href="mailto:{{ usuario.email }}" class="text-decoration-none">
+                            {{ usuario.email }}
+                        </a>
+                    </td>
+                    <td>
+                        <a href="tel:{{ usuario.telefone }}" class="text-decoration-none">
+                            {{ usuario.telefone }}
+                        </a>
+                    </td>
+                    <td>{{ usuario.data_cadastro.strftime('%d/%m/%Y') }}</td>
+                    <td>
+                        <div class="d-flex flex-column">
+                            <span class="fw-medium">R$ {{ "%.2f"|format(usuario.valor_mensal) }}</span>
+                            <small class="text-muted">Mensal</small>
+                        </div>
+                    </td>
+                    <td>
+                        {% if usuario.ativo %}
+                            <span class="badge bg-success-subtle text-success">
+                                <i class="bi bi-check-circle me-1"></i>Ativo
+                            </span>
+                        {% else %}
+                            <span class="badge bg-danger-subtle text-danger">
+                                <i class="bi bi-x-circle me-1"></i>Inativo
+                            </span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <div class="btn-group">
+                            <a href="{{ url_for('atualizar', id=usuario.id) }}" 
+                               class="btn btn-sm btn-primary" 
+                               data-bs-toggle="tooltip" 
+                               data-bs-placement="top" 
+                               title="Editar informações do usuário">
+                                <i class="bi bi-pencil"></i>
+                            </a>
+                            <button type="button" 
+                                    class="btn btn-sm btn-danger" 
+                                    data-bs-toggle="tooltip" 
+                                    data-bs-placement="top" 
+                                    title="Excluir usuário do sistema"
+                                    onclick="confirmarExclusao({{ usuario.id }}, '{{ usuario.nome }}')">
+                                <i class="bi bi-trash"></i>
+                            </button>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<!-- Modal Adicionar Usuário -->
+<div class="modal fade" id="adicionarModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Adicionar Novo Usuário</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <form action="{{ url_for('adicionar') }}" method="post" class="needs-validation" novalidate>
+                <div class="modal-body">
+                    <div class="mb-3">
+                        <label for="nome" class="form-label">Nome</label>
+                        <input type="text" class="form-control" id="nome" name="nome" 
+                               pattern="[A-Za-zÀ-ÿ\s]+" required>
+                        <div class="invalid-feedback">
+                            Por favor, insira um nome válido.
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="email" class="form-label">E-mail</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-envelope"></i>
+                            </span>
+                            <input type="email" class="form-control" id="email" name="email" required>
+                            <div class="invalid-feedback">
+                                Por favor, insira um e-mail válido.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="telefone" class="form-label">Telefone</label>
+                        <div class="input-group">
+                            <span class="input-group-text">
+                                <i class="bi bi-phone"></i>
+                            </span>
+                            <input type="tel" class="form-control" id="telefone" name="telefone" 
+                                   pattern="[\d\s()-]+" required>
+                            <div class="invalid-feedback">
+                                Por favor, insira um telefone válido.
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label for="valor_mensal" class="form-label">Valor Mensal Comprometido</label>
+                        <div class="input-group">
+                            <span class="input-group-text">R$</span>
+                            <input type="text" class="form-control" 
+                                   id="valor_mensal" name="valor_mensal" 
+                                   value="0,00" required>
+                            <div class="invalid-feedback">
+                                Por favor, insira um valor válido.
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="Descartar alterações">
+                        <i class="bi bi-x-circle me-2"></i>Cancelar
+                    </button>
+                    <button type="submit" class="btn btn-primary"
+                            data-bs-toggle="tooltip" data-bs-placement="top" title="Salvar novo usuário">
+                        <i class="bi bi-check-circle me-2"></i>Adicionar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Modal de Confirmação -->
+<div class="modal fade" id="confirmacaoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Fechar"></button>
+            </div>
+            <div class="modal-body">
+                <div class="alert alert-warning">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Você está prestes a excluir o usuário <strong id="nomeUsuario"></strong>. 
+                    Esta ação não pode ser desfeita.
+                </div>
+                <p>Tem certeza que deseja continuar?</p>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal"
+                        data-bs-toggle="tooltip" data-bs-placement="top" title="Cancelar exclusão">
+                    <i class="bi bi-x-circle me-2"></i>Cancelar
+                </button>
+                <a href="#" id="btnConfirmarExclusao" class="btn btn-danger"
+                   data-bs-toggle="tooltip" data-bs-placement="top" title="Confirmar exclusão do usuário">
+                    <i class="bi bi-trash me-2"></i>Excluir
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+{% block scripts %}
+<script>
+function confirmarExclusao(id, nome) {
+    var modal = new bootstrap.Modal(document.getElementById('confirmacaoModal'));
+    document.getElementById('nomeUsuario').textContent = nome;
+    document.getElementById('btnConfirmarExclusao').href = '/excluir/' + id;
+    
+    // Adiciona loading state ao botão de confirmação
+    document.getElementById('btnConfirmarExclusao').addEventListener('click', function(e) {
+        this.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Excluindo...';
+        this.classList.add('disabled');
+        showLoading();
+    });
+    
+    modal.show();
+}
+
+// Formatação do valor monetário
+function formatarValorMonetario(campo) {
+    let valor = campo.value.replace(/\D/g, '');
+    valor = (parseFloat(valor) / 100).toFixed(2);
+    campo.value = valor.replace('.', ',');
+}
+
+document.getElementById('valor_mensal').addEventListener('input', function(e) {
+    let valor = e.target.value.replace(/\D/g, '');
+    if (valor === '') {
+        e.target.value = '0,00';
+        return;
+    }
+    
+    // Remove zeros à esquerda
+    valor = valor.replace(/^0+/, '');
+    
+    // Adiciona zeros à direita se necessário
+    if (valor.length === 1) valor = '00' + valor;
+    if (valor.length === 2) valor = '0' + valor;
+    
+    // Formata o valor com vírgula
+    const inteiros = valor.slice(0, -2);
+    const centavos = valor.slice(-2);
+    
+    // Adiciona pontos para milhares
+    let valorFormatado = inteiros.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    
+    e.target.value = valorFormatado + ',' + centavos;
+});
+
+// Formata o valor ao perder o foco
+document.getElementById('valor_mensal').addEventListener('blur', function(e) {
+    let valor = e.target.value.replace(/\D/g, '');
+    if (valor === '' || valor === '0') {
+        e.target.value = '0,00';
+    }
+});
+
+// Formatação do telefone
+document.getElementById('telefone').addEventListener('input', function(e) {
+    let value = e.target.value.replace(/\D/g, '');
+    if (value.length <= 11) {
+        value = value.replace(/^(\d{2})(\d)/g, '($1) $2');
+        value = value.replace(/(\d)(\d{4})$/, '$1-$2');
+        e.target.value = value;
+    }
+});
+
+// Validação do formulário
+(function () {
+    'use strict'
+    var forms = document.querySelectorAll('.needs-validation')
+    Array.prototype.slice.call(forms).forEach(function (form) {
+        form.addEventListener('submit', function (event) {
+            if (!form.checkValidity()) {
+                event.preventDefault()
+                event.stopPropagation()
+                // Mostra toast de erro
+                showToast('Por favor, preencha todos os campos obrigatórios.', 'error');
+            }
+            form.classList.add('was-validated')
+        }, false)
+    })
+})()
+</script>
+{% endblock scripts %}
+
+{% endblock content %}

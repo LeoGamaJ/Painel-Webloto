@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="container mt-4">
+    <h2>Inserir Contribuinte</h2>
+    <form method="POST" class="needs-validation" novalidate>
+        <div class="mb-3">
+            <label for="contribuinte_id" class="form-label">Contribuinte</label>
+            <select class="form-select" id="contribuinte_id" name="contribuinte_id" required>
+                <option value="">Escolha um contribuinte...</option>
+                {% for contribuinte in contribuintes %}
+                <option value="{{ contribuinte.id }}"
+                        {% if contribuinte_selecionado and contribuinte.id == contribuinte_selecionado.id %}selected{% endif %}>
+                    {{ contribuinte.nome }}
+                </option>
+                {% endfor %}
+            </select>
+            <div class="invalid-feedback">
+                Por favor, selecione um contribuinte.
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="valor" class="form-label">Valor da Contribuição</label>
+            <div class="input-group">
+                <span class="input-group-text">R$</span>
+                <input type="number" step="0.01" min="0" class="form-control" id="valor" name="valor" required>
+                <div class="invalid-feedback">
+                    Por favor, insira um valor válido.
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-3">
+            <label for="mes_referencia" class="form-label">Mês de Referência</label>
+            <input type="month" class="form-control" id="mes_referencia" name="mes_referencia" 
+                   value="{{ request.form.get('mes_referencia', now.strftime('%Y-%m')) }}" required>
+            <div class="invalid-feedback">
+                Por favor, selecione o mês de referência.
+            </div>
+        </div>
+
+        <button type="submit" class="btn btn-primary">Inserir Contribuinte</button>
+        <a href="{{ url_for('index') }}" class="btn btn-secondary">Cancelar</a>
+    </form>
+</div>
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    // Validação do formulário
+    (function () {
+        'use strict'
+        var forms = document.querySelectorAll('.needs-validation')
+        Array.prototype.slice.call(forms)
+            .forEach(function (form) {
+                form.addEventListener('submit', function (event) {
+                    if (!form.checkValidity()) {
+                        event.preventDefault()
+                        event.stopPropagation()
+                    }
+                    form.classList.add('was-validated')
+                }, false)
+            })
+    })()
+</script>
+{% endblock scripts %}

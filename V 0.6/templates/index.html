@@ -1,0 +1,415 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="dashboard-container">
+    <!-- Cabeçalho da Página -->
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge bg-primary-subtle text-primary mb-2">Dashboard</span>
+                <h2 class="mb-0 fw-bold">Visão Geral</h2>
+                <p class="text-muted mb-0">{{ mes_atual.strftime('%B de %Y')|capitalize }}</p>
+            </div>
+            <div class="d-flex gap-3">
+                <button class="btn btn-light" id="refreshDashboard" data-bs-toggle="tooltip" title="Atualizar Dados">
+                    <i class="bi bi-arrow-clockwise"></i>
+                </button>
+                <a href="/inserir_contribuicao" class="btn btn-primary d-flex align-items-center gap-2">
+                    <i class="bi bi-plus-lg"></i>
+                    Nova Contribuição
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- Cards de Métricas -->
+    <div class="row g-4 mb-4">
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="metric-icon bg-primary-subtle text-primary">
+                            <i class="bi bi-wallet2"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success">Mês Atual</span>
+                    </div>
+                    <h6 class="text-muted mb-2">Total Arrecadado</h6>
+                    <h3 class="mb-3">R$ {{ "%.2f"|format(estatisticas.total_arrecadado_mes) }}</h3>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-primary" 
+                             style="width: {{ (estatisticas.total_arrecadado_mes/estatisticas.total_esperado_mes*100) if estatisticas.total_esperado_mes > 0 else 0 }}%">
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        {{ "%.1f"|format(estatisticas.total_arrecadado_mes/estatisticas.total_esperado_mes*100) if estatisticas.total_esperado_mes > 0 else 0 }}% da meta
+                    </small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="metric-icon bg-success-subtle text-success">
+                            <i class="bi bi-graph-up"></i>
+                        </div>
+                        <span class="badge bg-success-subtle text-success">Meta Mensal</span>
+                    </div>
+                    <h6 class="text-muted mb-2">Total Esperado</h6>
+                    <h3 class="mb-3">R$ {{ "%.2f"|format(estatisticas.total_esperado_mes) }}</h3>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-success" style="width: 100%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Meta definida</small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="metric-icon bg-info-subtle text-info">
+                            <i class="bi bi-calendar-check"></i>
+                        </div>
+                        <span class="badge bg-info-subtle text-info">Anual</span>
+                    </div>
+                    <h6 class="text-muted mb-2">Total Arrecadado</h6>
+                    <h3 class="mb-3">R$ {{ "%.2f"|format(estatisticas.total_arrecadado_ano) }}</h3>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-info" 
+                             style="width: {{ (estatisticas.total_arrecadado_ano/estatisticas.total_esperado_ano*100) if estatisticas.total_esperado_ano > 0 else 0 }}%">
+                        </div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">
+                        {{ "%.1f"|format(estatisticas.total_arrecadado_ano/estatisticas.total_esperado_ano*100) if estatisticas.total_esperado_ano > 0 else 0 }}% do objetivo
+                    </small>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-6 col-lg-3">
+            <div class="metric-card card h-100">
+                <div class="card-body">
+                    <div class="d-flex justify-content-between align-items-center mb-3">
+                        <div class="metric-icon bg-warning-subtle text-warning">
+                            <i class="bi bi-trophy"></i>
+                        </div>
+                        <span class="badge bg-warning-subtle text-warning">Meta Anual</span>
+                    </div>
+                    <h6 class="text-muted mb-2">Total Esperado</h6>
+                    <h3 class="mb-3">R$ {{ "%.2f"|format(estatisticas.total_esperado_ano) }}</h3>
+                    <div class="progress" style="height: 6px;">
+                        <div class="progress-bar bg-warning" style="width: 100%"></div>
+                    </div>
+                    <small class="text-muted mt-2 d-block">Objetivo definido</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tabela de Contribuições -->
+    <div class="card">
+        <div class="card-header">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h5 class="mb-0">Contribuições</h5>
+                    <small class="text-muted">Gerenciamento de pagamentos</small>
+                </div>
+                <div class="d-flex gap-3">
+                    <div class="search-box">
+                        <div class="input-group">
+                            <span class="input-group-text border-end-0 bg-transparent">
+                                <i class="bi bi-search text-muted"></i>
+                            </span>
+                            <input type="text" class="form-control border-start-0 ps-0" 
+                                   placeholder="Buscar contribuinte..." id="searchInput">
+                        </div>
+                    </div>
+                    <select class="form-select w-auto" id="monthFilter">
+                        <option value="">Todos os Meses</option>
+                        {% for mes in meses_disponiveis %}
+                        <option value="{{ mes.valor }}" 
+                                {{ 'selected' if mes.valor == mes_atual_str }}>
+                            {{ mes.data.strftime('%B/%Y')|capitalize }}
+                        </option>
+                        {% endfor %}
+                    </select>
+                    <select class="form-select w-auto" id="statusFilter">
+                        <option value="">Todos os Status</option>
+                        <option value="Pendente">Pendente</option>
+                        <option value="Pago">Pago</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+        <div class="table-responsive">
+            <table class="table table-hover align-middle">
+                <thead>
+                    <tr>
+                        <th scope="col" class="ps-4">Contribuinte</th>
+                        <th scope="col">Valor</th>
+                        <th scope="col">Data</th>
+                        <th scope="col">Status</th>
+                        <th scope="col" class="text-end pe-4">Ações</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for contribuinte in contribuintes %}
+                        {% for contribuicao in contribuinte.contribuicoes %}
+                            <tr>
+                                <td class="ps-4">
+                                    <div class="d-flex align-items-center">
+                                        <div class="avatar-circle me-3">
+                                            {{ contribuinte.nome[:2].upper() }}
+                                        </div>
+                                        <div>
+                                            <h6 class="mb-0">{{ contribuinte.nome }}</h6>
+                                            <small class="text-muted">{{ contribuinte.email }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        <span class="fw-medium">R$ {{ "%.2f"|format(contribuicao.valor) }}</span>
+                                        <small class="text-muted">Mensal</small>
+                                    </div>
+                                </td>
+                                <td data-month="{{ contribuicao.mes_referencia }}">
+                                    {% if contribuicao.status == 'Pago' %}
+                                        <div class="d-flex flex-column">
+                                            <span>{{ contribuicao.data_pagamento.strftime('%d/%m/%Y') }}</span>
+                                            <small class="text-muted">{{ contribuicao.data_pagamento.strftime('%H:%M') }}</small>
+                                        </div>
+                                    {% else %}
+                                        <div class="d-flex flex-column">
+                                            <span>-</span>
+                                            <small class="text-muted">Aguardando</small>
+                                        </div>
+                                    {% endif %}
+                                </td>
+                                <td>
+                                    {% if contribuicao.status == 'Pago' %}
+                                        <span class="badge bg-success-subtle text-success">
+                                            <i class="bi bi-check-circle-fill me-1"></i>Pago
+                                        </span>
+                                    {% else %}
+                                        <span class="badge bg-warning-subtle text-warning">
+                                            <i class="bi bi-clock-fill me-1"></i>Pendente
+                                        </span>
+                                    {% endif %}
+                                </td>
+                                <td class="text-end pe-4">
+                                    <div class="btn-group">
+                                        {% if contribuicao.status != 'Pago' %}
+                                            <button type="button" class="btn btn-sm btn-success" 
+                                                    onclick="confirmarPagamento({{ contribuicao.id }}, '{{ contribuinte.nome }}', {{ contribuicao.valor }})"
+                                                    title="Registrar Pagamento">
+                                                <i class="bi bi-check-lg"></i>
+                                            </button>
+                                        {% endif %}
+                                        <button type="button" class="btn btn-sm btn-danger"
+                                                onclick="confirmarExclusao({{ contribuicao.id }}, '{{ contribuinte.nome }}', {{ contribuicao.valor }})"
+                                                title="Excluir Contribuição">
+                                            <i class="bi bi-trash"></i>
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- Modais -->
+<div class="modal fade" id="confirmacaoPagamentoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">Confirmar Pagamento</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-4">
+                    <div class="icon-circle bg-success-subtle text-success mb-3">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <h5 class="mb-1">Confirmar pagamento de <span id="confirmaNome"></span>?</h5>
+                    <p class="text-muted mb-0">Valor: R$ <span id="confirmaValor"></span></p>
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="#" id="confirmarPagamentoLink" class="btn btn-success">
+                        Confirmar Pagamento
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="confirmacaoExclusaoModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <div class="modal-header border-0 pb-0">
+                <h5 class="modal-title">Confirmar Exclusão</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body text-center py-4">
+                <div class="mb-4">
+                    <div class="icon-circle bg-danger-subtle text-danger mb-3">
+                        <i class="bi bi-exclamation-triangle-fill"></i>
+                    </div>
+                    <h5 class="mb-1">Excluir contribuição de <span id="excluiNome"></span>?</h5>
+                    <p class="text-muted mb-0">Valor: R$ <span id="excluiValor"></span></p>
+                </div>
+                <div class="d-flex justify-content-center gap-2">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                    <a href="#" id="confirmarExclusaoLink" class="btn btn-danger">
+                        Confirmar Exclusão
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+    .dashboard-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .metric-card {
+        transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-5px);
+    }
+
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .metric-icon i {
+        font-size: 1.5rem;
+    }
+
+    .search-box .form-control {
+        min-width: 250px;
+    }
+
+    .search-box .input-group-text,
+    .search-box .form-control {
+        border-color: var(--border-color);
+    }
+
+    .search-box .form-control:focus {
+        box-shadow: none;
+    }
+
+    .avatar-circle {
+        width: 40px;
+        height: 40px;
+        background-color: var(--bg-hover);
+        border-radius: 10px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-weight: 600;
+        color: var(--primary-color);
+        font-size: 0.875rem;
+    }
+
+    .icon-circle {
+        width: 64px;
+        height: 64px;
+        border-radius: 50%;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin: 0 auto;
+    }
+
+    .icon-circle i {
+        font-size: 2rem;
+    }
+
+    .table > :not(caption) > * > * {
+        padding: 1rem;
+    }
+
+    .btn-group .btn {
+        border-radius: 8px !important;
+        margin: 0 0.25rem;
+    }
+
+    .btn-group .btn i {
+        font-size: 1.1rem;
+    }
+</style>
+
+{% endblock content %}
+
+{% block scripts %}
+<script>
+    function filterTable() {
+        const searchText = document.getElementById('searchInput').value.toLowerCase();
+        const selectedStatus = document.getElementById('statusFilter').value;
+        const selectedMonth = document.getElementById('monthFilter').value;
+        const rows = document.querySelectorAll('tbody tr');
+
+        rows.forEach(row => {
+            const nome = row.querySelector('h6').textContent.toLowerCase();
+            const email = row.querySelector('small').textContent.toLowerCase();
+            const status = row.querySelector('.badge').textContent.trim();
+            const month = row.querySelector('[data-month]').getAttribute('data-month');
+            
+            const matchesSearch = nome.includes(searchText) || email.includes(searchText);
+            const matchesStatus = selectedStatus === '' || status.includes(selectedStatus);
+            const matchesMonth = selectedMonth === '' || month === selectedMonth;
+
+            row.style.display = matchesSearch && matchesStatus && matchesMonth ? '' : 'none';
+        });
+    }
+
+    function confirmarPagamento(id, nome, valor) {
+        document.getElementById('confirmaNome').textContent = nome;
+        document.getElementById('confirmaValor').textContent = valor.toFixed(2);
+        document.getElementById('confirmarPagamentoLink').href = `/registrar_pagamento/${id}`;
+        new bootstrap.Modal(document.getElementById('confirmacaoPagamentoModal')).show();
+    }
+
+    function confirmarExclusao(id, nome, valor) {
+        document.getElementById('excluiNome').textContent = nome;
+        document.getElementById('excluiValor').textContent = valor.toFixed(2);
+        document.getElementById('confirmarExclusaoLink').href = `/excluir_contribuicao/${id}`;
+        new bootstrap.Modal(document.getElementById('confirmacaoExclusaoModal')).show();
+    }
+
+    // Event listeners
+    document.getElementById('searchInput').addEventListener('input', filterTable);
+    document.getElementById('statusFilter').addEventListener('change', filterTable);
+    document.getElementById('monthFilter').addEventListener('change', filterTable);
+</script>
+{% endblock scripts %}
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Atualização automática
+    document.getElementById('refreshDashboard').addEventListener('click', function() {
+        location.reload();
+    });
+});
+</script>

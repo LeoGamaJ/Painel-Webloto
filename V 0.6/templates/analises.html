@@ -1,0 +1,442 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="analytics-container">
+    <!-- Cabeçalho da Página -->
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge bg-primary-subtle text-primary mb-2">Análises</span>
+                <h2 class="mb-0 fw-bold">Métricas e Insights</h2>
+            </div>
+            <div class="text-muted">
+                <i class="bi bi-clock me-1"></i>
+                Atualizado em: {{ momento_atual }}
+            </div>
+        </div>
+    </div>
+
+    <!-- Gráficos Principais -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card">
+                <div class="card-body p-4">
+                    <div class="row">
+                        <div class="col-lg-8 mb-4 mb-lg-0">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h5 class="mb-1">Contribuições Mensais</h5>
+                                    <p class="text-muted mb-0">Evolução dos últimos 6 meses</p>
+                                </div>
+                            </div>
+                            <div style="height: 300px;">
+                                <canvas id="contribuicoesChart"></canvas>
+                            </div>
+                        </div>
+                        <div class="col-lg-4">
+                            <div class="d-flex justify-content-between align-items-center mb-4">
+                                <div>
+                                    <h5 class="mb-1">Status do Mês</h5>
+                                    <p class="text-muted mb-0">Distribuição atual</p>
+                                </div>
+                            </div>
+                            <div style="height: 300px;">
+                                <canvas id="statusChart"></canvas>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="row">
+        <!-- Métricas de Atrasos -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="mb-1">Métricas de Atrasos</h5>
+                            <p class="text-muted mb-0">Análise de inadimplência</p>
+                        </div>
+                    </div>
+                    <div class="row g-4 mb-4">
+                        <div class="col-md-6">
+                            <div class="metric-card p-3 rounded-3 bg-light">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="metric-icon bg-primary-subtle text-primary me-3">
+                                        <i class="bi bi-calendar-x"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Média de Atraso</h6>
+                                        <small class="text-muted">Dias por pagamento</small>
+                                    </div>
+                                </div>
+                                <h3 class="mb-1">{{ media_atraso }} dias</h3>
+                                <span class="badge {{ 'bg-success-subtle text-success' if media_atraso == 0 else 
+                                                    'bg-warning-subtle text-warning' if media_atraso <= 5 else 
+                                                    'bg-danger-subtle text-danger' }}">
+                                    {{ 'Sem atrasos' if media_atraso == 0 else 
+                                       'Atraso moderado' if media_atraso <= 5 else 
+                                       'Atraso significativo' }}
+                                </span>
+                            </div>
+                        </div>
+                        <div class="col-md-6">
+                            <div class="metric-card p-3 rounded-3 bg-light">
+                                <div class="d-flex align-items-center mb-3">
+                                    <div class="metric-icon bg-warning-subtle text-warning me-3">
+                                        <i class="bi bi-graph-down"></i>
+                                    </div>
+                                    <div>
+                                        <h6 class="mb-0">Taxa de Inadimplência</h6>
+                                        <small class="text-muted">Mês atual</small>
+                                    </div>
+                                </div>
+                                <h3 class="mb-1">{{ "%.1f"|format(taxa_inadimplencia) }}%</h3>
+                                <span class="badge {{ 'bg-success-subtle text-success' if taxa_inadimplencia <= 10 else 
+                                                    'bg-warning-subtle text-warning' if taxa_inadimplencia <= 30 else 
+                                                    'bg-danger-subtle text-danger' }}">
+                                    {{ 'Baixa' if taxa_inadimplencia <= 10 else 
+                                       'Moderada' if taxa_inadimplencia <= 30 else 
+                                       'Alta' }}
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                    <div style="height: 250px;">
+                        <canvas id="inadimplenciaChart"></canvas>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Previsões e Alertas -->
+        <div class="col-lg-6 mb-4">
+            <div class="card h-100">
+                <div class="card-body p-4">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <div>
+                            <h5 class="mb-1">Previsões e Alertas</h5>
+                            <p class="text-muted mb-0">Análise preditiva</p>
+                        </div>
+                    </div>
+                    <div class="prediction-card p-4 rounded-3 bg-light mb-4">
+                        <div class="d-flex align-items-center mb-3">
+                            <div class="metric-icon bg-primary-subtle text-primary me-3">
+                                <i class="bi bi-graph-up-arrow"></i>
+                            </div>
+                            <div>
+                                <h6 class="mb-0">Estimativa de Arrecadação</h6>
+                                <small class="text-muted">Próximo mês</small>
+                            </div>
+                        </div>
+                        <h3 class="mb-3">R$ {{ "%.2f"|format(estimativa_arrecadacao) }}</h3>
+                        <div class="progress mb-2" style="height: 8px;">
+                            <div class="progress-bar {{ 'bg-success' if percentual_estimativa >= 80 else 'bg-warning' }}" 
+                                 style="width: {{ percentual_estimativa }}%" 
+                                 title="{{ percentual_estimativa }}% da meta">
+                            </div>
+                        </div>
+                        <small class="text-muted">
+                            {{ "Meta atingida" if percentual_estimativa >= 100 else 
+                               "Próximo da meta" if percentual_estimativa >= 80 else 
+                               "Abaixo da meta" }}
+                        </small>
+                    </div>
+                    
+                    <div class="alert-section">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h6 class="mb-0">
+                                Padrões de Atraso
+                                {% if alertas_atraso %}
+                                <span class="badge bg-danger-subtle text-danger ms-2">{{ alertas_atraso|length }}</span>
+                                {% endif %}
+                            </h6>
+                        </div>
+                        <div class="alert-list">
+                            {% if alertas_atraso %}
+                                {% for alerta in alertas_atraso %}
+                                <div class="alert-item p-3 rounded-3 bg-light mb-2">
+                                    <div class="d-flex justify-content-between align-items-center">
+                                        <div>
+                                            <h6 class="mb-1">{{ alerta.nome }}</h6>
+                                            <small class="text-muted">
+                                                {{ alerta.meses_atraso }} {{ 'mês' if alerta.meses_atraso == 1 else 'meses' }} em atraso
+                                            </small>
+                                        </div>
+                                        <span class="badge {{ 'bg-warning-subtle text-warning' if alerta.probabilidade < 70 else 
+                                                            'bg-danger-subtle text-danger' }}">
+                                            {{ alerta.probabilidade }}% chance de atraso
+                                        </span>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="text-center py-4">
+                                    <div class="metric-icon bg-success-subtle text-success mx-auto mb-3">
+                                        <i class="bi bi-check-circle-fill"></i>
+                                    </div>
+                                    <p class="text-muted mb-0">Nenhum padrão de atraso detectado</p>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock content %}
+
+<style>
+    .analytics-container {
+        max-width: 1400px;
+        margin: 0 auto;
+    }
+
+    .metric-icon {
+        width: 48px;
+        height: 48px;
+        border-radius: 12px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .metric-icon i {
+        font-size: 1.5rem;
+    }
+
+    .metric-card {
+        transition: all 0.3s ease;
+    }
+
+    .metric-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .prediction-card {
+        transition: all 0.3s ease;
+    }
+
+    .prediction-card:hover {
+        transform: translateY(-2px);
+    }
+
+    .alert-item {
+        transition: all 0.3s ease;
+    }
+
+    .alert-item:hover {
+        transform: translateX(5px);
+    }
+
+    .progress {
+        border-radius: 999px;
+        background-color: rgba(var(--bs-primary-rgb), 0.1);
+    }
+
+    .progress-bar {
+        border-radius: 999px;
+    }
+
+    .badge {
+        padding: 0.5em 1em;
+        font-weight: 500;
+    }
+</style>
+
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    // Configuração comum para todos os gráficos
+    const commonOptions = {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    usePointStyle: true,
+                    padding: 20
+                }
+            },
+            tooltip: {
+                backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                titleColor: '#333',
+                titleFont: {
+                    size: 14,
+                    weight: 'bold'
+                },
+                bodyColor: '#666',
+                bodyFont: {
+                    size: 13
+                },
+                borderColor: '#ddd',
+                borderWidth: 1,
+                padding: 10,
+                displayColors: true,
+                callbacks: {
+                    label: function(context) {
+                        let label = context.dataset.label || '';
+                        if (label) {
+                            label += ': ';
+                        }
+                        if (context.parsed.y !== null) {
+                            label += new Intl.NumberFormat('pt-BR', {
+                                style: 'currency',
+                                currency: 'BRL'
+                            }).format(context.parsed.y);
+                        }
+                        return label;
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                ticks: {
+                    callback: function(value) {
+                        return new Intl.NumberFormat('pt-BR', {
+                            style: 'currency',
+                            currency: 'BRL'
+                        }).format(value);
+                    },
+                    padding: 10
+                },
+                grid: {
+                    drawBorder: false,
+                    color: 'rgba(0, 0, 0, 0.05)'
+                }
+            },
+            x: {
+                grid: {
+                    display: false
+                }
+            }
+        }
+    };
+
+    // Gráfico de Contribuições Mensais
+    const contribuicoesCtx = document.getElementById('contribuicoesChart').getContext('2d');
+    new Chart(contribuicoesCtx, {
+        type: 'bar',
+        data: {
+            labels: {{ labels_contribuicoes|tojson }},
+            datasets: [{
+                label: 'Contribuições',
+                data: {{ valores_contribuicoes|tojson }},
+                backgroundColor: 'rgba(13, 110, 253, 0.5)',
+                borderColor: 'rgb(13, 110, 253)',
+                borderWidth: 1,
+                borderRadius: 4
+            }]
+        },
+        options: commonOptions
+    });
+
+    // Gráfico de Status
+    const statusCtx = document.getElementById('statusChart').getContext('2d');
+    new Chart(statusCtx, {
+        type: 'doughnut',
+        data: {
+            labels: ['Em dia', 'Atrasado', 'Pendente'],
+            datasets: [{
+                data: {{ [contribuintes_em_dia, contribuintes_atrasados, contribuintes_pendentes]|tojson }},
+                backgroundColor: [
+                    'rgba(25, 135, 84, 0.5)',
+                    'rgba(220, 53, 69, 0.5)',
+                    'rgba(255, 193, 7, 0.5)'
+                ],
+                borderColor: [
+                    'rgb(25, 135, 84)',
+                    'rgb(220, 53, 69)',
+                    'rgb(255, 193, 7)'
+                ],
+                borderWidth: 1
+            }]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: {
+                    position: 'bottom',
+                    labels: {
+                        usePointStyle: true,
+                        padding: 20
+                    }
+                },
+                tooltip: {
+                    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+                    titleColor: '#333',
+                    bodyColor: '#666',
+                    borderColor: '#ddd',
+                    borderWidth: 1,
+                    padding: 10,
+                    callbacks: {
+                        label: function(context) {
+                            const value = context.raw;
+                            const total = context.dataset.data.reduce((a, b) => a + b, 0);
+                            const percentage = ((value / total) * 100).toFixed(1);
+                            return `${context.label}: ${value} (${percentage}%)`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+
+    // Gráfico de Inadimplência
+    const inadimplenciaCtx = document.getElementById('inadimplenciaChart').getContext('2d');
+    new Chart(inadimplenciaCtx, {
+        type: 'line',
+        data: {
+            labels: {{ labels_inadimplencia|tojson }},
+            datasets: [{
+                label: 'Taxa de Inadimplência',
+                data: {{ valores_inadimplencia|tojson }},
+                fill: true,
+                backgroundColor: 'rgba(255, 193, 7, 0.2)',
+                borderColor: 'rgb(255, 193, 7)',
+                tension: 0.4,
+                pointRadius: 4,
+                pointBackgroundColor: 'rgb(255, 193, 7)'
+            }]
+        },
+        options: {
+            ...commonOptions,
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        callback: function(value) {
+                            return value + '%';
+                        },
+                        padding: 10
+                    }
+                },
+                x: {
+                    grid: {
+                        display: false
+                    }
+                }
+            },
+            plugins: {
+                ...commonOptions.plugins,
+                tooltip: {
+                    ...commonOptions.plugins.tooltip,
+                    callbacks: {
+                        label: function(context) {
+                            return `Taxa: ${context.parsed.y}%`;
+                        }
+                    }
+                }
+            }
+        }
+    });
+</script>
+{% endblock %}

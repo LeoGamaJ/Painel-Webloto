@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão do Bolão Lotérico</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.7.2/font/bootstrap-icons.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.css">
+    <style>
+        :root {
+            --sidebar-width: 280px;
+            --primary-color: #0d6efd;
+            --hover-bg: #e9ecef;
+            --active-bg: #e7f1ff;
+            --text-color: #333;
+            --submenu-text: #555;
+        }
+        
+        .navbar-brand {
+            font-weight: bold;
+            font-size: 1.5rem;
+        }
+        
+        .sidebar {
+            width: var(--sidebar-width);
+            position: fixed;
+            top: 0;
+            left: 0;
+            height: 100vh;
+            background-color: #f8f9fa;
+            border-right: 1px solid #dee2e6;
+            padding-top: 1.5rem;
+            z-index: 1000;
+            overflow-y: auto;
+            transition: transform 0.3s ease-in-out;
+        }
+
+        .sidebar::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .sidebar::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb {
+            background: #ccc;
+            border-radius: 3px;
+        }
+
+        .sidebar::-webkit-scrollbar-thumb:hover {
+            background: #999;
+        }
+
+        .sidebar .brand {
+            padding: 0 1.5rem 1.5rem;
+            border-bottom: 1px solid #dee2e6;
+            margin-bottom: 1rem;
+        }
+
+        .sidebar .brand h5 {
+            margin: 0;
+            color: var(--primary-color);
+            font-weight: 600;
+        }
+
+        .sidebar .nav-link {
+            color: var(--text-color);
+            padding: 0.8rem 1.5rem;
+            display: flex;
+            align-items: center;
+            transition: all 0.2s ease;
+            border-radius: 0.25rem;
+            margin: 0.2rem 0.8rem;
+        }
+
+        .sidebar .nav-link:hover {
+            background-color: var(--hover-bg);
+            color: var(--primary-color);
+            transform: translateX(5px);
+        }
+
+        .sidebar .nav-link.active {
+            background-color: var(--active-bg);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .sidebar .nav-link i {
+            width: 20px;
+            text-align: center;
+            margin-right: 0.8rem;
+            font-size: 1.1rem;
+        }
+
+        /* Estilo para submenu */
+        .sidebar .submenu {
+            margin: 0.2rem 0 0.2rem 2.8rem;
+            list-style: none;
+            padding-left: 0;
+            border-left: 1px solid #dee2e6;
+        }
+
+        .sidebar .submenu .nav-link {
+            padding: 0.6rem 1rem;
+            font-size: 0.9rem;
+            color: var(--submenu-text);
+            margin: 0.1rem 0.8rem;
+        }
+
+        .sidebar .submenu .nav-link:hover {
+            transform: translateX(3px);
+        }
+
+        .sidebar .submenu .nav-link.active {
+            background-color: var(--active-bg);
+            color: var(--primary-color);
+            font-weight: 500;
+        }
+
+        .sidebar .submenu .nav-link i {
+            font-size: 0.9rem;
+        }
+
+        .sidebar .nav-item .nav-link[data-bs-toggle="collapse"] {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .sidebar .nav-item .nav-link[data-bs-toggle="collapse"]::after {
+            content: "\F282";
+            font-family: "bootstrap-icons";
+            font-size: 0.8rem;
+            transition: transform 0.3s;
+            margin-left: 0.5rem;
+        }
+
+        .sidebar .nav-item .nav-link[data-bs-toggle="collapse"][aria-expanded="true"]::after {
+            transform: rotate(90deg);
+        }
+
+        /* Garante que o submenu fique visível quando expandido */
+        .collapse.show {
+            display: block !important;
+        }
+
+        .main-content {
+            margin-left: var(--sidebar-width);
+            padding: 20px;
+        }
+
+        .card {
+            box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075);
+            border: none;
+            margin-bottom: 1rem;
+        }
+
+        .card-header {
+            background-color: #fff;
+            border-bottom: 1px solid rgba(0,0,0,.125);
+        }
+
+        .table th {
+            font-weight: 600;
+            background-color: #f8f9fa;
+        }
+
+        .badge {
+            font-size: 0.875rem;
+            padding: 0.5em 0.75em;
+        }
+
+        .btn-group .btn {
+            margin-right: 0.25rem;
+        }
+
+        @media (max-width: 768px) {
+            .sidebar {
+                transform: translateX(-100%);
+                transition: transform 0.3s ease-in-out;
+            }
+
+            .sidebar.show {
+                transform: translateX(0);
+            }
+
+            .main-content {
+                margin-left: 0;
+            }
+        }
+
+        /* Sistema de Loading Moderno */
+        .loading-toast {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 9999;
+            background: white;
+            border-radius: 8px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.1);
+            padding: 1rem;
+            display: none;
+            align-items: center;
+            gap: 1rem;
+            max-width: 400px;
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: opacity 0.3s ease, transform 0.3s ease;
+        }
+
+        .loading-toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+
+        .loading-toast .spinner {
+            width: 1.5rem;
+            height: 1.5rem;
+        }
+
+        .loading-toast .message {
+            flex: 1;
+            font-size: 0.9rem;
+        }
+
+        .loading-toast .error {
+            color: #dc3545;
+            display: none;
+        }
+
+        .loading-toast .retry-btn {
+            display: none;
+            padding: 0.25rem 0.5rem;
+            font-size: 0.875rem;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-toast .spinner {
+            animation: spin 1s linear infinite;
+        }
+
+        /* Estilos para tooltips personalizados */
+        .custom-tooltip {
+            --bs-tooltip-bg: var(--primary-color);
+            --bs-tooltip-color: white;
+        }
+
+        /* Estilos para o toast personalizado */
+        .toast-container {
+            position: fixed;
+            top: 1rem;
+            right: 1rem;
+            z-index: 1050;
+        }
+
+        /* Melhorias visuais para feedback */
+        .btn:disabled {
+            cursor: not-allowed;
+            position: relative;
+        }
+
+        .btn:disabled::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: inherit;
+        }
+    </style>
+</head>
+<body>
+    <!-- Sistema de Loading Moderno -->
+    <div class="loading-toast">
+        <div class="spinner-border spinner text-primary" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+        <div class="message">
+            <p class="mb-0">Processando sua solicitação...</p>
+            <small class="text-muted d-block">Isso pode levar alguns segundos</small>
+        </div>
+        <div class="error">
+            <p class="mb-1">Ops! Algo deu errado.</p>
+            <small>A operação está demorando mais que o esperado.</small>
+        </div>
+        <button class="btn btn-primary btn-sm retry-btn" onclick="window.location.reload()">
+            <i class="bi bi-arrow-clockwise me-1"></i>Tentar
+        </button>
+    </div>
+
+    <!-- Toast Container -->
+    <div class="toast-container"></div>
+
+    <!-- Sidebar -->
+    <aside class="sidebar">
+        <div class="brand">
+            <h5>
+                <i class="bi bi-currency-dollar me-2"></i>Bolão Lotérico
+            </h5>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'index' }}" href="/">
+                    <i class="bi bi-house-door"></i>
+                    <span>Dashboard</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link {{ 'active' if request.endpoint == 'usuarios' }}" href="/usuarios">
+                    <i class="bi bi-people"></i>
+                    <span>Gerenciamento de Usuários</span>
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/analises" class="nav-link {{ 'active' if request.endpoint == 'analises' }}">
+                    <i class="bi bi-graph-up"></i>
+                    Análises
+                </a>
+            </li>
+            <li class="nav-item">
+                <a href="/relatorios" class="nav-link {{ 'active' if request.endpoint == 'relatorios' }}">
+                    <i class="bi bi-file-earmark-text"></i>
+                    Relatórios
+                </a>
+            </li>
+        </ul>
+    </aside>
+
+    <!-- Main Content -->
+    <div class="main-content">
+        <!-- Mobile Toggle Button -->
+        <button class="btn btn-primary d-md-none mb-3" type="button" onclick="toggleSidebar()">
+            <i class="bi bi-list"></i>
+        </button>
+
+        {% block content %}{% endblock %}
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/toastr.js/latest/toastr.min.js"></script>
+    <script>
+        // Inicializa todos os tooltips
+        document.addEventListener('DOMContentLoaded', function() {
+            var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+            var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+                return new bootstrap.Tooltip(tooltipTriggerEl, {
+                    template: '<div class="tooltip custom-tooltip" role="tooltip"><div class="tooltip-arrow"></div><div class="tooltip-inner"></div></div>'
+                });
+            });
+
+            // Garante que o submenu permaneça aberto quando necessário
+            var collapse = document.querySelector('#usuariosSubmenu');
+            if (collapse && collapse.classList.contains('show')) {
+                collapse.classList.add('show');
+            }
+
+            // Intercepta todos os forms para mostrar loading
+            document.querySelectorAll('form').forEach(form => {
+                form.addEventListener('submit', function() {
+                    const submitButton = this.querySelector('button[type="submit"]');
+                    if (submitButton) {
+                        submitButton.disabled = true;
+                        const originalText = submitButton.innerHTML;
+                        submitButton.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span>Processando...';
+                        
+                        // Restaura o botão após 5 segundos (caso algo dê errado)
+                        setTimeout(() => {
+                            submitButton.disabled = false;
+                            submitButton.innerHTML = originalText;
+                        }, 5000);
+                    }
+                    showLoading();
+                });
+            });
+        });
+
+        // Toggle sidebar no mobile
+        function toggleSidebar() {
+            const sidebar = document.querySelector('.sidebar');
+            if (sidebar) {
+                sidebar.classList.toggle('show');
+            }
+        }
+
+        // Configuração do Toastr
+        toastr.options = {
+            closeButton: true,
+            progressBar: true,
+            positionClass: "toast-top-right",
+            timeOut: 3000,
+            extendedTimeOut: 1000,
+            preventDuplicates: true,
+            newestOnTop: true
+        };
+
+        // Sistema de Loading Moderno
+        const loadingSystem = {
+            toast: document.querySelector('.loading-toast'),
+            spinner: document.querySelector('.loading-toast .spinner'),
+            message: document.querySelector('.loading-toast .message'),
+            error: document.querySelector('.loading-toast .error'),
+            retryBtn: document.querySelector('.loading-toast .retry-btn'),
+            timeout: null,
+            
+            show(message = 'Processando sua solicitação...') {
+                this.reset();
+                this.message.querySelector('p').textContent = message;
+                this.toast.style.display = 'flex';
+                requestAnimationFrame(() => {
+                    this.toast.classList.add('show');
+                });
+            },
+            
+            hide() {
+                this.toast.classList.remove('show');
+                setTimeout(() => {
+                    this.reset();
+                    this.toast.style.display = 'none';
+                }, 300);
+            },
+            
+            showError() {
+                this.spinner.style.display = 'none';
+                this.message.style.display = 'none';
+                this.error.style.display = 'block';
+                this.retryBtn.style.display = 'inline-flex';
+            },
+            
+            reset() {
+                this.spinner.style.display = 'block';
+                this.message.style.display = 'block';
+                this.error.style.display = 'none';
+                this.retryBtn.style.display = 'none';
+                if (this.timeout) {
+                    clearTimeout(this.timeout);
+                    this.timeout = null;
+                }
+            }
+        };
+
+        // Funções globais de loading (mantidas para compatibilidade)
+        function showLoading(message) {
+            loadingSystem.show(message);
+        }
+
+        function hideLoading() {
+            loadingSystem.hide();
+        }
+
+        // Interceptar erros não tratados
+        window.addEventListener('unhandledrejection', function(event) {
+            console.error('Erro não tratado:', event.reason);
+            loadingSystem.showError();
+        });
+
+        // Converte mensagens flash para toasts
+        {% with messages = get_flashed_messages(with_categories=true) %}
+            {% if messages %}
+                {% for category, message in messages %}
+                    showToast('{{ message }}', '{{ "success" if category == "success" else "error" }}');
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+    </script>
+    {% block scripts %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,215 @@
+{% extends "base.html" %}
+
+{% block content %}
+<div class="reports-container">
+    <div class="page-header mb-4">
+        <div class="d-flex justify-content-between align-items-center">
+            <div>
+                <span class="badge bg-primary-subtle text-primary mb-2">Relatórios</span>
+                <h2 class="mb-0 fw-bold">Geração de Relatórios</h2>
+            </div>
+            <div class="text-muted">
+                <i class="bi bi-clock me-1"></i>
+                Atualizado em: {{ momento_atual }}
+            </div>
+        </div>
+    </div>
+
+    <div class="card">
+        <div class="card-body">
+            <form id="relatorioForm" class="row g-3">
+                <div class="col-md-6">
+                    <label class="form-label">Tipo de Relatório</label>
+                    <select class="form-select" id="tipoRelatorio" name="tipo" required>
+                        <option value="">Selecione o tipo...</option>
+                        <option value="geral">Relatório Geral</option>
+                        <option value="mensal">Relatório Mensal</option>
+                        <option value="contribuinte">Relatório por Contribuinte</option>
+                    </select>
+                </div>
+
+                <div class="col-md-6 d-none" id="periodoGroup">
+                    <label class="form-label">Período</label>
+                    <input type="month" class="form-select" id="periodo" name="periodo">
+                </div>
+
+                <div class="col-md-6 d-none" id="contribuinteGroup">
+                    <label class="form-label">Contribuinte</label>
+                    <select class="form-select" id="contribuinte" name="contribuinte_id">
+                        <option value="">Selecione o contribuinte...</option>
+                        {% for c in contribuintes %}
+                        <option value="{{ c.id }}">{{ c.nome }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="col-md-6">
+                    <label class="form-label">Formato de Saída</label>
+                    <select class="form-select" id="formato" name="formato" required>
+                        <option value="html">Visualizar na Tela</option>
+                        <option value="pdf">PDF</option>
+                        <option value="md">Markdown</option>
+                        <option value="txt">Texto</option>
+                    </select>
+                </div>
+
+                <div class="col-12">
+                    <button type="submit" class="btn btn-primary" id="btnGerar">
+                        <i class="bi bi-file-earmark-text me-2"></i>
+                        Gerar Relatório
+                    </button>
+                    <button type="button" class="btn btn-outline-secondary ms-2" id="btnLimpar">
+                        <i class="bi bi-x-circle me-2"></i>
+                        Limpar
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <div id="errorAlert" class="alert alert-danger mt-3 d-none" role="alert">
+        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+        <span id="errorMessage"></span>
+    </div>
+
+    <div id="relatorioPreview" class="card mt-4 d-none">
+        <div class="card-body">
+            <div id="relatorioConteudo"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const form = document.getElementById('relatorioForm');
+    const tipoSelect = document.getElementById('tipoRelatorio');
+    const periodoGroup = document.getElementById('periodoGroup');
+    const contribuinteGroup = document.getElementById('contribuinteGroup');
+    const periodoInput = document.getElementById('periodo');
+    const contribuinteInput = document.getElementById('contribuinte');
+    const preview = document.getElementById('relatorioPreview');
+    const conteudo = document.getElementById('relatorioConteudo');
+    const errorAlert = document.getElementById('errorAlert');
+    const errorMessage = document.getElementById('errorMessage');
+    const btnGerar = document.getElementById('btnGerar');
+    const btnLimpar = document.getElementById('btnLimpar');
+
+    // Timeout para requisições em milissegundos (30 segundos)
+    const TIMEOUT_DURATION = 30000;
+
+    function showError(message) {
+        errorMessage.textContent = message;
+        errorAlert.classList.remove('d-none');
+        btnGerar.disabled = false;
+        hideLoading(); // Usa a função global do base.html
+    }
+
+    function limparFormulario() {
+        form.reset();
+        preview.classList.add('d-none');
+        conteudo.innerHTML = '';
+        periodoGroup.classList.add('d-none');
+        contribuinteGroup.classList.add('d-none');
+        periodoInput.required = false;
+        contribuinteInput.required = false;
+        errorAlert.classList.add('d-none');
+        btnGerar.disabled = false;
+        form.classList.remove('was-validated');
+        hideLoading(); // Usa a função global do base.html
+    }
+
+    tipoSelect.addEventListener('change', function() {
+        const tipo = this.value;
+        periodoGroup.classList.add('d-none');
+        contribuinteGroup.classList.add('d-none');
+        periodoInput.required = false;
+        contribuinteInput.required = false;
+        
+        if (tipo === 'mensal') {
+            periodoGroup.classList.remove('d-none');
+            periodoInput.required = true;
+        } else if (tipo === 'contribuinte') {
+            contribuinteGroup.classList.remove('d-none');
+            contribuinteInput.required = true;
+        }
+    });
+
+    btnLimpar.addEventListener('click', limparFormulario);
+
+    form.addEventListener('submit', async function(e) {
+        e.preventDefault();
+        
+        if (!form.checkValidity()) {
+            e.stopPropagation();
+            form.classList.add('was-validated');
+            return;
+        }
+
+        btnGerar.disabled = true;
+        errorAlert.classList.add('d-none');
+        
+        // Usa a função global de loading do base.html
+        showLoading('Gerando relatório...');
+
+        try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => {
+                controller.abort();
+                throw new Error('TIMEOUT');
+            }, TIMEOUT_DURATION);
+
+            const formData = new FormData(form);
+            const response = await fetch('/gerar_relatorio', {
+                method: 'POST',
+                body: formData,
+                signal: controller.signal
+            });
+
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Erro ao gerar relatório');
+            }
+
+            if (formData.get('formato') === 'html') {
+                const data = await response.json();
+                if (data.error) {
+                    throw new Error(data.error);
+                }
+                conteudo.innerHTML = data.conteudo || '';
+                preview.classList.remove('d-none');
+            } else {
+                const blob = await response.blob();
+                const filename = response.headers.get('Content-Disposition')?.split('filename=')[1] || 
+                               `relatorio_${formData.get('tipo')}_${new Date().toISOString().split('T')[0]}.${formData.get('formato')}`;
+                
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = filename;
+                document.body.appendChild(a);
+                a.click();
+                window.URL.revokeObjectURL(url);
+                document.body.removeChild(a);
+            }
+            hideLoading(); // Usa a função global do base.html
+        } catch (error) {
+            console.error('Erro:', error);
+            if (error.message === 'TIMEOUT') {
+                showError('A operação excedeu o tempo limite. Por favor, tente novamente.');
+            } else if (error.name === 'AbortError') {
+                showError('A operação foi cancelada. Por favor, tente novamente.');
+            } else {
+                showError(error.message || 'Erro ao gerar relatório. Por favor, tente novamente.');
+            }
+        } finally {
+            btnGerar.disabled = false;
+        }
+    });
+
+    // Inicializar o formulário
+    limparFormulario();
+});
+</script>
+{% endblock %}
