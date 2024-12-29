@@ -1,0 +1,36 @@
+<div class="report-content">
+    <h3>Relatório Geral</h3>
+    <p>Data de Geração: {{ momento_atual }}</p>
+    
+    <h4>Resumo</h4>
+    <ul>
+        <li>Total de Contribuintes: {{ dados.contribuintes|length }}</li>
+        <li>Total Arrecadado: R$ {{ "%.2f"|format(dados.total_arrecadado) }}</li>
+    </ul>
+    
+    <h4>Contribuintes</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Nome</th>
+                <th>Email</th>
+                <th>Total Contribuído</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in dados.contribuintes %}
+            {% set total_contribuinte = namespace(valor=0) %}
+            {% for contrib in c.contribuicoes %}
+                {% set total_contribuinte.valor = total_contribuinte.valor + contrib.valor %}
+            {% endfor %}
+            <tr>
+                <td>{{ c.nome }}</td>
+                <td>{{ c.email }}</td>
+                <td>R$ {{ "%.2f"|format(total_contribuinte.valor) }}</td>
+                <td>{{ "Ativo" if c.ativo else "Inativo" }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

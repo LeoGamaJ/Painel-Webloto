@@ -1,0 +1,48 @@
+<div class="report-content">
+    <h3>Relatório Mensal</h3>
+    <p>Data de Geração: {{ momento_atual }}</p>
+    <p>Período: {{ dados.periodo }}</p>
+    
+    <h4>Resumo do Mês</h4>
+    {% set total = namespace(valor=0, pagos=0, pendentes=0) %}
+    {% for c in dados.contribuicoes %}
+        {% set total.valor = total.valor + c.valor %}
+        {% if c.status == 'Pago' %}
+            {% set total.pagos = total.pagos + 1 %}
+        {% else %}
+            {% set total.pendentes = total.pendentes + 1 %}
+        {% endif %}
+    {% endfor %}
+    
+    <ul>
+        <li>Total de Contribuições: {{ dados.contribuicoes|length }}</li>
+        <li>Total Arrecadado: R$ {{ "%.2f"|format(total.valor) }}</li>
+        <li>Status de Pagamentos:</li>
+        <ul>
+            <li>Pagos: {{ total.pagos }}</li>
+            <li>Pendentes: {{ total.pendentes }}</li>
+        </ul>
+    </ul>
+    
+    <h4>Detalhamento</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Contribuinte</th>
+                <th>Valor</th>
+                <th>Data Pagamento</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in dados.contribuicoes %}
+            <tr>
+                <td>{{ c.contribuinte.nome }}</td>
+                <td>R$ {{ "%.2f"|format(c.valor) }}</td>
+                <td>{{ c.data_pagamento.strftime('%d/%m/%Y') if c.status == 'Pago' else '-' }}</td>
+                <td>{{ c.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>

@@ -1,0 +1,52 @@
+<div class="report-content">
+    <h3>Relatório por Contribuinte</h3>
+    <p>Data de Geração: {{ momento_atual }}</p>
+    
+    <h4>Dados do Contribuinte</h4>
+    <ul>
+        <li>Nome: {{ dados.contribuinte.nome }}</li>
+        <li>Email: {{ dados.contribuinte.email }}</li>
+        <li>Telefone: {{ dados.contribuinte.telefone }}</li>
+        <li>Data de Cadastro: {{ dados.contribuinte.data_cadastro.strftime('%d/%m/%Y') }}</li>
+        <li>Status: {{ "Ativo" if dados.contribuinte.ativo else "Inativo" }}</li>
+        <li>Valor Mensal: R$ {{ "%.2f"|format(dados.contribuinte.valor_mensal) }}</li>
+    </ul>
+    
+    <h4>Histórico de Contribuições</h4>
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Mês Referência</th>
+                <th>Valor</th>
+                <th>Data Pagamento</th>
+                <th>Status</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for c in dados.contribuicoes|sort(attribute='mes_referencia', reverse=True) %}
+            <tr>
+                <td>{{ c.mes_referencia }}</td>
+                <td>R$ {{ "%.2f"|format(c.valor) }}</td>
+                <td>{{ c.data_pagamento.strftime('%d/%m/%Y') if c.status == 'Pago' else '-' }}</td>
+                <td>{{ c.status }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    
+    <h4>Resumo</h4>
+    {% set totais = namespace(contribuicoes=0, pago=0, valor_total=0) %}
+    {% for c in dados.contribuicoes %}
+        {% set totais.contribuicoes = totais.contribuicoes + 1 %}
+        {% if c.status == 'Pago' %}
+            {% set totais.pago = totais.pago + c.valor %}
+        {% endif %}
+        {% set totais.valor_total = totais.valor_total + c.valor %}
+    {% endfor %}
+    
+    <ul>
+        <li>Total de Contribuições: {{ totais.contribuicoes }}</li>
+        <li>Total Contribuído: R$ {{ "%.2f"|format(totais.pago) }}</li>
+        <li>Média de Valor: R$ {{ "%.2f"|format(totais.valor_total / totais.contribuicoes) if totais.contribuicoes > 0 else "0.00" }}</li>
+    </ul>
+</div>
